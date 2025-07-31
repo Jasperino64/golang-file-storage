@@ -60,12 +60,7 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		respondWithError(w, http.StatusUnauthorized, "You are not allowed to upload a thumbnail for this video", nil)
 		return
 	}
-	// thumbnail := thumbnail{
-	// 	data:      imageData,
-	// 	mediaType: mediaType,
-	// }
-	// videoThumbnails[videoID] = thumbnail
-	// thumbnailURL := fmt.Sprintf("http://localhost:%v/api/thumbnails/%v", cfg.port, videoIDString)
+	
 	dataString := base64.StdEncoding.EncodeToString(imageData)
 	dataUrl := fmt.Sprintf("data:%s;base64,%s", mediaType, dataString)
 	video.ThumbnailURL = &dataUrl
