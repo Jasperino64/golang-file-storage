@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"mime"
@@ -66,6 +65,20 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		respondWithError(w, http.StatusUnauthorized, "You are not allowed to upload a thumbnail for this video", nil)
 		return
 	}
+	// Delete the old thumbnail if it exists
+	if video.ThumbnailURL != nil && *video.ThumbnailURL != "" {
+		// Extract the asset path from the URL
+		if idx := strings.LastIndex(*video.ThumbnailURL, "/assets/"); idx != -1 {
+			oldAssetPath := (*video.ThumbnailURL)[idx+len("/assets/"):]
+			oldAssetDiskPath := cfg.getAssetDiskPath(oldAssetPath)
+			if _, err := os.Stat(oldAssetDiskPath); err == nil {
+				if err := os.Remove(oldAssetDiskPath); err != nil {
+					respondWithError(w, http.StatusInternalServerError, "Unable to remove old thumbnail", err)
+					return
+				}
+			}
+		}
+	}
 
 	// Generate a unique filename for the new thumbnail
 	bytes := make([]byte, 32)
@@ -74,11 +87,8 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		respondWithError(w, http.StatusInternalServerError, "Unable to generate unique ID", err)
 		return
 	}
-	uniqueID := base64.RawURLEncoding.EncodeToString(bytes)
-	if len(uniqueID) > 32 {
-		uniqueID = uniqueID[:32] // Ensure the unique ID is not too long
-	}
-	assetPath := getAssetPath(uniqueID, mediaType)
+	
+	assetPath := getAssetPath(mediaType)
 	assetDiskPath := cfg.getAssetDiskPath(assetPath)
 
 	// Remove the old thumbnail if it exists
