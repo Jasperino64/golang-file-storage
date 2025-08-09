@@ -1,0 +1,1 @@
+aws s3api head-object --bucket tubely-20154096 --key YdqixnEjFNKe3776y6OlsPDDwCgj11hlDzYn2OpppKc.mp4 > /tmp/object_metadata.txt
