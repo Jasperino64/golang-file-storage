@@ -78,6 +78,7 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	tempfile.Seek(0, io.SeekStart)
 
 	aspectRatio, err := getVideoAspectRatio(tempfile.Name())
+	
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Unable to get video aspect ratio", err)
 		return
@@ -91,6 +92,19 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	default:
 		folder = "other"
 	}
+	
+	processedFilePath, err := processVideoForFastStart(tempfile.Name())
+	fmt.Println("processed file path:", processedFilePath)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to process video", err)
+		return
+	}
+	processedFile, err := os.Open(processedFilePath)
+	defer os.Remove(processedFilePath)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to open processed video", err)
+		return
+	}
 	bytes := make([]byte, 32)
 	n, err := rand.Read(bytes) // Generate random bytes for uniqueness
 	if err != nil || n != 32 {
@@ -102,7 +116,7 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	_, err = cfg.s3Client.PutObject(r.Context(), &s3.PutObjectInput{
 		Bucket: &cfg.s3Bucket,
 		Key:    aws.String(fmt.Sprintf("%s/%s", folder, fileKey)),
-		Body:   tempfile,
+		Body:   processedFile,
 		ContentType: aws.String("video/mp4"),
 	})
 	if err != nil {

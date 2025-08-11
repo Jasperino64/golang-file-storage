@@ -105,3 +105,13 @@ func parseAspectRatio(data []byte) string {
 	}
 	return ""
 }
+
+func processVideoForFastStart(filepath string) (string, error) {
+	var outFilepath = filepath + ".processing"
+	cmd := exec.Command("ffmpeg", "-i", filepath, "-c", "copy","-movflags", "faststart", "-f", "mp4", outFilepath)
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	return outFilepath, nil
+}
